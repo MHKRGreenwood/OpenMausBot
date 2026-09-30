@@ -9883,6 +9883,34 @@ describe("harness HTTP API", () => {
     }
   });
 
+  it("accepts underscore-prefixed toolkit slugs like Composio's _1password", async () => {
+    expect((await api("PUT", "/api/config", { composio: { apiKey: "ak_good" } })).status).toBe(200);
+    const bot = (await api("POST", "/api/bots")).body.bot;
+    try {
+      const token = await mintTestCapability(BASE, bot.id, bot.threadId, { kind: "connectors" });
+      const response = await fetch(`${BASE}/api/internal/connectors/request`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          botId: bot.id,
+          threadId: bot.threadId,
+          resumeKey: "underscore-fixture-123",
+          items: [{ slug: "_1password" }],
+        }),
+      });
+      // Before the CONNECTOR_SLUG fix, the leading underscore made this the
+      // sole item get filtered out, and the empty batch failed closed as
+      // "one to twelve valid connection requests are required".
+      expect(response.status).toBe(200);
+      const body = await response.json() as { messageIds: string[] };
+      expect(body.messageIds).toHaveLength(1);
+      const status = await api("GET", `/api/bots/${bot.id}/connector-cards/${body.messageIds[0]}/status?threadId=${bot.threadId}`);
+      expect(status.status).toBe(200);
+    } finally {
+      await api("DELETE", `/api/bots/${bot.id}`);
+    }
+  });
+
   it("does not relay a slow connector request after Connected Apps is disabled", async () => {
     const bot = (await api("POST", "/api/bots")).body.bot;
     let held: Awaited<ReturnType<typeof delayedJsonBody>> | undefined;

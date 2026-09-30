@@ -12857,7 +12857,12 @@ function resolveReplyTarget(threadId: string, value: unknown): Message | undefin
   return target;
 }
 
-const CONNECTOR_SLUG = /^[a-z0-9][a-z0-9_-]{0,80}$/;
+// Composio prefixes slugs that would otherwise start with a digit, so
+// 1Password is `_1password` and 21RISK is `_21risk`. Admitting a leading
+// underscore keeps those toolkits from being silently dropped here (they'd
+// otherwise fail closed as "one to twelve valid connection requests are
+// required" once every item in the batch is filtered out).
+const CONNECTOR_SLUG = /^[a-z0-9_][a-z0-9_-]{0,80}$/;
 const pendingConnectorResumes = new Map<
   string,
   { botId: string; threadId: string; resumeKey: string; labels: string[] }
