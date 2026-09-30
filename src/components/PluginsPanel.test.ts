@@ -123,6 +123,10 @@ describe("connected-app status races", () => {
     expect(managedConnectorUnavailableReason("managed", "twitter")).toMatch(/self-hosted/i);
     expect(managedConnectorUnavailableReason("self-hosted", "twitter")).toBeNull();
   });
+  it("explains why 1Password needs self-hosted mode instead of failing with a raw 'not found'", () => {
+    expect(managedConnectorUnavailableReason("managed", "_1password")).toMatch(/self-hosted/i);
+    expect(managedConnectorUnavailableReason("self-hosted", "_1password")).toBeNull();
+  });
   it("does not let an older not_connected response erase a newer OAuth attempt", async () => {
     const generations = new Map([["gmail", 0]]);
     const initialRequestGenerations = new Map(generations);
